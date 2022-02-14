@@ -1,5 +1,6 @@
 \documentclass{article}
 \usepackage[utf8]{inputenc}
+\usepackage{amsmath}
 \title{Model Expl}
 \author{Manu Kumar}
 \date{February 2022}
@@ -8,7 +9,7 @@
 
 \section{Model Explanation}
 
-The SIRRe model is encapsulated by the following adjustment to the Kendrick-McCormack equations:
+The SIRDRe model is encapsulated by the following adjustment to the Kendrick-McCormack equations:
 
 $$ \frac{dS}{dt} = - \beta SI + \gamma I $$
 $$ \frac{dI}{dt} = \beta SI - \gamma I - \nu I + \mu R $$
@@ -16,16 +17,82 @@ $$ \frac{dR}{dt} = \gamma I - \mu dR $$
 $$ \frac{dD}{dt} = \nu I $$
 $$ \frac{dRe}{dt} = \mu R $$
 
+The equilibrium point for this expression is clearly,
+
+$$
+\begin{bmatrix}
+    S_0 \\ 
+    I_0 \\
+    R_0 \\
+    D_0 \\
+    Re_0
+\end{bmatrix} 
+= 
+span \left\{ \begin{bmatrix} 1 \\ 0 \\ 0 \\ 0 \\ 0 \end{bmatrix} , \begin{bmatrix} 0 \\ 0 \\ 0 \\ 0 \\ 1 \end{bmatrix} \right\}
+$$
+Therfore, the initial population can be arbitrary in the analysis of equilbirium points. \\
+Using the equilibrium point $S = s_0$, the Jacobian is:
+
+$$J = \begin{bmatrix}
+    0 & \gamma & 0 & 0 & 0 \\
+    0 & \beta s_0 -\gamma - \nu & \mu & 0 & 0 \\
+    0 & \gamma & -\mu & 0 & 0 \\
+    0 & \nu & 0 & 0 & 0 \\
+    0 & 0 & \mu & 0 & 0 
+\end{bmatrix}$$
+
 \begin{verbatim}
 syms m n g b
 
-% Jacobian of SIRRe model, b = beta * s
+% Jacobian of SIRRe model, b = beta * s_0
 J(g, b, n, m) = [0  -b+g   0 0 0;
                  0 -b-g-n  m 0 0;
                  0    g   -m 0 0;
                  0    n    0 0 0;
                  0    0    m 0 0;];
 [V, D] = eig(J)
+
 \end{verbatim}
+We obtain the following eigenvalues from this analysis:
+
+$\lambda = \left\{ 0, 0, 0, -\frac{1}{2} \left( \beta s_0 + \gamma + \mu + \nu \pm \sqrt{D} \right) \right\} $ \\
+where $D = \left( \beta s_0 + \gamma + \nu + \mu \right)^2 - 4\mu(\beta s_0 + \nu) $ \\
+For most practical discussions, since $s_0$ describes a population, \\
+$s_0 >> \beta, \gamma, \mu, \nu$ \\
+Therefore, we can approximate our initial estimate of non-trivial values of $\lambda$ to:
+
+$\lambda \approx -\frac{1}{2}\beta s_0 \pm \sqrt{\left( \beta s_0 \right)^2 - 4\mu \beta s_0}$ \\
+Since the rate and population are both non-negative quantities, and non-zero for non-trivial cases,
+the quantity $-\frac{1}{2}\beta s_0$ is negative. \\
+
+\subsection{Real Eigenvalues}
+There are three possible eigenvalue cases, determined by values of D.
+
+$\Rightarrow D \geq 0$ 
+
+$\Rightarrow s_0 \geq 4\mu$
+
+\subsubsection{Both Negative}
+We add the further constraint 
+
+$\frac{1}{2} \beta s_0 > D$ 
+
+$\Rightarrow \frac{1}{4} \left( \beta s_0 \right)^2 > \left( \beta s_0 \right)^2 - 4\mu \beta s_0$
+
+$\Rightarrow \mu > \frac{3}{16} \beta s_0$ \\
+But, as brought up earlier, $s_0$, in most practical cases, 
+is much larger than $\beta$ and $\mu$. Thus, a factor of $\frac{3}{16}$ will not be enough to make $\mu$ ever outweigh the RHS.
+Thus, two negative eigenvalues is impractical.
+
+\subsubsection{One Zero, One Negative}
+With the same thought process as the previous case, 
+$\mu = \frac{3}{16} \beta s_0$ is also an impractical situation.
+
+\subsubsection{One Positive, One Negative}
+This is most likely, in the situation of real eigenvalues, that will arise.
+
+\subsection{Complex Eigenvalues}
+The contraint $s_0 < 4\mu$ cannot be practically achieved, 
+hence the situation of complex eigenvalues will not arise. 
 
 \end{document}
