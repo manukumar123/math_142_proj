@@ -16,6 +16,7 @@ covid_facts <- function(region) {
   confirmed <- strtoi(t(confirmed)[5:length(confirmed)])
   recovered <- strtoi(t(recovered)[5:length(recovered)])
   deaths <- strtoi(t(deaths)[5:length(deaths)])
+  # Flat 4% of recovered
   reinfection <- floor(0.04 * recovered)
   dates <- t(dates)[5:length(dates)]
   dates <- as.character(

@@ -1,6 +1,7 @@
 \documentclass{article}
 \usepackage[utf8]{inputenc}
 \usepackage{amsmath}
+\usepackage{amssymb}
 \title{Model Expl}
 \author{Manu Kumar}
 \date{February 2022}
@@ -13,9 +14,32 @@ The SIRDRe model is encapsulated by the following adjustment to the Kendrick-McC
 
 $$ \frac{dS}{dt} = - \beta SI + \gamma I $$
 $$ \frac{dI}{dt} = \beta SI - \gamma I - \nu I + \mu R $$
-$$ \frac{dR}{dt} = \gamma I - \mu dR $$
+$$ \frac{dR}{dt} = \gamma I - \mu R $$
 $$ \frac{dD}{dt} = \nu I $$
 $$ \frac{dRe}{dt} = \mu R $$
+
+Since we don't have access to the actual number of infected individuals, 
+we have to assume the number of tested individuals is some weighted factor of the actual number of individuals:
+
+$$ S(t) = \alpha(t)\tilde{S}(t) $$
+$$ I(t) = \alpha(t)\tilde{I}(t) $$
+$$ R(t) = \alpha(t)\tilde{R}(t) $$
+$$ Re(t) = \alpha(t)\tilde{Re}(t) $$ 
+
+Where $\alpha(t)$ is an 'optimism parameter'. 
+We start at a realistic expectation of the proportion of the population getting tested 
+(around $10^4$, akin to the bounds in the main paper), and plateaus at 1 over time, 
+directed by the following equation:
+
+$$ 1 - \left( 10^4 \left( \frac{tan^{-1}(x) + \pi / 2}{\pi} - 1\right) \right) $$
+
+The final model we have access to:
+
+$$ \frac{d\tilde{S}}{dt} = - \beta \tilde{S}(t)\tilde{I}(t) + \gamma \tilde{I}(t) $$
+$$ \frac{d\tilde{I}}{dt} = \beta \tilde{S}(t)\tilde{I}(t) - \gamma \tilde{I}(t) - \nu \tilde{I}(t) + \mu \tilde{R}(t) $$
+$$ \frac{d\tilde{R}}{dt} = \gamma \tilde{I}(t) - \mu \tilde{R}(t) $$
+$$ \frac{dD}{dt} = \nu \alpha(t) \tilde{I}(t) $$
+$$ \frac{d\tilde{Re}}{dt} = \mu \tilde{R}(t) $$
 
 The equilibrium point for this expression is clearly,
 
@@ -28,13 +52,24 @@ $$
     Re_0
 \end{bmatrix} 
 = 
-span \left\{ \begin{bmatrix} 1 \\ 0 \\ 0 \\ 0 \\ 0 \end{bmatrix} , \begin{bmatrix} 0 \\ 0 \\ 0 \\ 0 \\ 1 \end{bmatrix} \right\}
+span \left\{ \begin{bmatrix} 1 \\ 0 \\ 0 \\ 0 \\ 0 \end{bmatrix} \right\}
 $$
+
+$$
+J = \begin{bmatrix}
+    -\beta \tilde{I}(t) & -\beta \tilde{S}(t) + \gamma & 0 & 0 & 0 \\
+    \beta \tilde{I}(t) & \beta \tilde{S}(t) -\gamma - \nu & \mu & 0 & 0 \\
+    0 & \gamma & -\mu & 0 & 0 \\
+    0 & \nu & 0 & 0 & 0 \\
+    0 & 0 & \mu & 0 & 0 
+\end{bmatrix}
+$$
+
 Therfore, the initial population can be arbitrary in the analysis of equilbirium points. \\
 Using the equilibrium point $S = s_0$, the Jacobian is:
 
-$$J = \begin{bmatrix}
-    0 & \gamma & 0 & 0 & 0 \\
+$$J_{eq} = \begin{bmatrix}
+    0 & -\beta s_0 + \gamma & 0 & 0 & 0 \\
     0 & \beta s_0 -\gamma - \nu & \mu & 0 & 0 \\
     0 & \gamma & -\mu & 0 & 0 \\
     0 & \nu & 0 & 0 & 0 \\
@@ -46,7 +81,7 @@ syms m n g b
 
 % Jacobian of SIRRe model, b = beta * s_0
 J(g, b, n, m) = [0  -b+g   0 0 0;
-                 0 -b-g-n  m 0 0;
+                 0  b-g-n  m 0 0;
                  0    g   -m 0 0;
                  0    n    0 0 0;
                  0    0    m 0 0;];
@@ -55,44 +90,22 @@ J(g, b, n, m) = [0  -b+g   0 0 0;
 \end{verbatim}
 We obtain the following eigenvalues from this analysis:
 
-$\lambda = \left\{ 0, 0, 0, -\frac{1}{2} \left( \beta s_0 + \gamma + \mu + \nu \pm \sqrt{D} \right) \right\} $ \\
-where $D = \left( \beta s_0 + \gamma + \nu + \mu \right)^2 - 4\mu(\beta s_0 + \nu) $ \\
+$\lambda = \left\{ 0, 0, 0, -\frac{1}{2} \left( \beta s_0 + \gamma + \mu + \nu \pm \alpha(t)\sqrt{D} \right) \right\} $ \\
+where $D = \left( \beta s_0 + \gamma + \nu + \mu \right)^2 + 4\mu(\beta s_0 + \nu) $ \\
 For most practical discussions, since $s_0$ describes a population, \\
 $s_0 >> \beta, \gamma, \mu, \nu$ \\
 Therefore, we can approximate our initial estimate of non-trivial values of $\lambda$ to:
 
-$\lambda \approx -\frac{1}{2}\beta s_0 \pm \sqrt{\left( \beta s_0 \right)^2 - 4\mu \beta s_0}$ \\
+$\lambda \approx \frac{1}{2} \left(-\beta s_0 \pm \alpha(t)\sqrt{\left( \beta s_0 \right)^2 + 4\mu \beta s_0} \right)$ \\
 Since the rate and population are both non-negative quantities, and non-zero for non-trivial cases,
-the quantity $-\frac{1}{2}\beta s_0$ is negative. \\
+the quantity $-\beta s_0$ is negative.
 
-\subsection{Real Eigenvalues}
-There are three possible eigenvalue cases, determined by values of D.
-
-$\Rightarrow D \geq 0$ 
-
-$\Rightarrow s_0 \geq 4\mu$
-
-\subsubsection{Both Negative}
-We add the further constraint 
-
-$\frac{1}{2} \beta s_0 > D$ 
-
-$\Rightarrow \frac{1}{4} \left( \beta s_0 \right)^2 > \left( \beta s_0 \right)^2 - 4\mu \beta s_0$
-
-$\Rightarrow \mu > \frac{3}{16} \beta s_0$ \\
-But, as brought up earlier, $s_0$, in most practical cases, 
-is much larger than $\beta$ and $\mu$. Thus, a factor of $\frac{3}{16}$ will not be enough to make $\mu$ ever outweigh the RHS.
-Thus, two negative eigenvalues is impractical.
-
-\subsubsection{One Zero, One Negative}
-With the same thought process as the previous case, 
-$\mu = \frac{3}{16} \beta s_0$ is also an impractical situation.
-
-\subsubsection{One Positive, One Negative}
-This is most likely, in the situation of real eigenvalues, that will arise.
-
-\subsection{Complex Eigenvalues}
-The contraint $s_0 < 4\mu$ cannot be practically achieved, 
-hence the situation of complex eigenvalues will not arise. 
+\subsection{Eigenvalues}
+Since all the rates and poplations are non-negative quantities, the quantity $D > 0$.
+For estimates of $\alpha(t)$ earlier in the spread of the pandemic, 
+our model assumes it is quite large, and plateaus to 1. Hence, it is clear that at any t,
+$\alpha(t) \sqrt{\left( \beta s_0 \right)^2 + 4\mu \beta s_0} > \beta s_0$. \\
+$\therefore$ we would assume the model is \textbf{asymptotically unstable}, 
+and in the long run the epidemic will have a minimal effect on the population.
 
 \end{document}
